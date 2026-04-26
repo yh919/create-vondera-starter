@@ -1,6 +1,6 @@
 {
   "name": "create-vondera-starter",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "CLI to scaffold a new Vondera e-commerce project",
   "main": "index.js",
   "type": "module",
