@@ -22,28 +22,36 @@ program
   .option('--no-install', 'Skip dependency installation')
   .option('--template <type>', 'Template to use (default: next)', 'next')
   .action(async (projectName, options) => {
-    let name = projectName;
-
-    if (!name) {
-      const answers = await inquirer.prompt([
-        {
-          type: 'input',
-          name: 'name',
-          message: 'What is your project name?',
-          default: 'my-vondera-app',
-          validate: (input) => {
-            if (/^([a-z\-\_\d])+$/.test(input)) return true;
-            return 'Project name may only include letters, numbers, underscores and hashes.';
-          },
+    const answers = await inquirer.prompt([
+      {
+        type: 'input',
+        name: 'name',
+        message: 'What is your project name?',
+        default: 'my-vondera-app',
+        when: () => !projectName,
+        validate: (input) => {
+          if (/^([a-z\-\_\d])+$/.test(input)) return true;
+          return 'Project name may only include letters, numbers, underscores and hashes.';
         },
-      ]);
-      name = answers.name;
-    }
+      },
+      {
+        type: 'input',
+        name: 'apiKey',
+        message: 'Enter your Vondera API Key:',
+        validate: (input) => {
+          if (input.trim().length > 0) return true;
+          return 'API Key is required to make the store work.';
+        },
+      },
+    ]);
+
+    const name = projectName || answers.name;
+    const apiKey = answers.apiKey;
 
     const targetDir = path.join(process.cwd(), name);
 
     if (fs.existsSync(targetDir)) {
-      console.error(chalk.red(`Error: Directory ${name} already exists.`));
+      console.error(chalk.red(`\nError: Directory ${name} already exists.`));
       process.exit(1);
     }
 
@@ -57,9 +65,9 @@ program
       await copyTemplate(name, targetDir);
       spinner.succeed('Template files copied.');
 
-      // 2. Replace Variables
+      // 2. Replace Variables & Create .env
       spinner.start('Customizing project...');
-      await replaceVariables(name, targetDir);
+      await replaceVariables(name, targetDir, apiKey);
       spinner.succeed('Project customized.');
 
       // 3. Initialize Git
@@ -78,6 +86,7 @@ program
 
       // Success Message
       console.log(`\n${chalk.green('Success!')} Created ${chalk.bold(name)} at ${targetDir}`);
+      console.log(chalk.gray(`Configured Vondera API Key in .env`));
       console.log('\nInside that directory, you can run several commands:');
       console.log(`\n  ${chalk.cyan('npm run dev')}`);
       console.log('    Starts the development server.');
@@ -100,12 +109,17 @@ async function copyTemplate(projectName, targetDir) {
   await fs.copy(templateDir, targetDir);
 }
 
-async function replaceVariables(projectName, targetDir) {
+async function replaceVariables(projectName, targetDir, apiKey) {
   const filesToProcess = [
     'package.json',
     'README.md',
   ];
 
+  // 1. Create .env file from apiKey
+  const envPath = path.join(targetDir, '.env');
+  await fs.writeFile(envPath, `VITE_VONDERA_API_KEY=${apiKey}\n`, 'utf8');
+
+  // 2. Process other files
   for (const file of filesToProcess) {
     const filePath = path.join(targetDir, file);
     if (await fs.pathExists(filePath)) {
@@ -117,7 +131,7 @@ async function replaceVariables(projectName, targetDir) {
         pkg.name = projectName;
         pkg.version = '0.1.0';
         pkg.description = `A fresh Vondera e-commerce project: ${projectName}`;
-        delete pkg.bin; // Remove CLI bin entry if it was copied (it shouldn't be, but safe to check)
+        delete pkg.bin; 
         content = JSON.stringify(pkg, null, 2);
       } else {
         // Generic replacement for other files
