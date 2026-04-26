@@ -1,0 +1,28 @@
+{
+  "name": "create-vondera-starter",
+  "version": "1.0.0",
+  "description": "CLI to scaffold a new Vondera e-commerce project",
+  "main": "index.js",
+  "type": "module",
+  "bin": {
+    "create-vondera-starter": "./index.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "vondera",
+    "ecommerce",
+    "starter",
+    "cli"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "commander": "^12.0.0",
+    "fs-extra": "^11.2.0",
+    "inquirer": "^9.2.16",
+    "ora": "^8.0.1"
+  }
+}
