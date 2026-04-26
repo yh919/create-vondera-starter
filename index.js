@@ -21,7 +21,7 @@ const BANNER = `
 program
   .name("create-vondera-starter")
   .description("Scaffold a new Vondera e-commerce project")
-  .version("1.2.2")
+  .version("1.2.4")
   .argument("[project-name]", "Name of the project")
   .option("--no-install", "Skip dependency installation")
   .option("--template <type>", "Template to use (default: next)", "next")
@@ -134,20 +134,30 @@ program
 async function copyTemplate(projectName, targetDir) {
   const templateDir = path.join(__dirname, "template");
   await fs.copy(templateDir, targetDir);
+
+  // npm renames .gitignore to .npmignore on publish.
+  // We need to rename it back to .gitignore in the target directory.
+  const npmIgnorePath = path.join(targetDir, ".npmignore");
+  const gitIgnorePath = path.join(targetDir, ".gitignore");
+  if (fs.existsSync(npmIgnorePath)) {
+    await fs.move(npmIgnorePath, gitIgnorePath, { overwrite: true });
+  }
 }
 
 async function replaceVariables(projectName, targetDir, apiKey, storeName) {
   // 1. Create .env file from apiKey
   const envPath = path.join(targetDir, ".env");
-  await fs.writeFile(envPath, `VITE_VONDERA_API_KEY=${apiKey}\n`, "utf8");
+  const envContent = `VITE_VONDERA_API_KEY="${apiKey}"\n`;
+  await fs.writeFile(envPath, envContent, "utf8");
 
   // 2. Define files to process
-  // We'll process package.json, README.md, index.html and all files in src
+  // We'll process package.json, README.md, index.html, .env and all files in src
   const filesToProcess = [
     "package.json",
     "README.md",
     "index.html",
     "API_DOCUMENTATION.md",
+    ".env",
   ];
 
   // Helper to get all files in a directory recursively
@@ -204,7 +214,11 @@ async function replaceVariables(projectName, targetDir, apiKey, storeName) {
         // 2. Replace Store Name (order matters)
         content = content.replace(/Vondera Ecommerce/g, storeName);
         content = content.replace(/Vondera Clothing Brand/g, storeName);
-        content = content.replace(/VONDERA/g, storeName.toUpperCase());
+        
+        // Only replace VONDERA if it's not the .env file (to keep VITE_VONDERA_API_KEY intact)
+        if (fileName !== ".env") {
+          content = content.replace(/VONDERA/g, storeName.toUpperCase());
+        }
 
         // 3. Replace "Vondera" with store name, but only if it's not part of an identifier like VonderaProduct
         // Using word boundary \b

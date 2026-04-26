@@ -1,12 +1,10 @@
 {
   "name": "create-vondera-starter",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "description": "CLI to scaffold a new Vondera e-commerce project",
   "main": "index.js",
   "type": "module",
-  "bin": {
-    "create-vondera-starter": "./index.js"
-  },
+  "bin": "./index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
